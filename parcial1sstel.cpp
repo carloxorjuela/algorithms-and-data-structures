@@ -69,7 +69,6 @@ void llenar_arreglo(int* arr, int n) {
     }
 }
 
-//clase Venta
 
 class Venta {
 private:
@@ -88,7 +87,7 @@ public:
         producto = p;
     }
     
-    //Getters y Setters
+    //Getters
     int getCliente() const { 
         return cliente; 
     }
@@ -126,17 +125,145 @@ public:
 };
 
 // Clase nodo con plantilla
+template <typename T>
+class Nodo {
+private:
+    T valor;
+    Nodo<T>* siguiente;
+public:
+    Nodo(T _valor) : valor(_valor), siguiente(nullptr) {}
 
-//poner aquí su código de listas con los comentarios realizados en las clases
+    void setSiguiente(Nodo<T>* _siguiente) { this->siguiente = _siguiente; }
+    void setValor(T _valor) { this->valor = _valor; }
+    T getValor() const { return valor; }
+    Nodo<T>* getSiguiente() const { return siguiente; }
+};
 
+// Clase lista enlazada con plantilla
+template <typename T>
+class ListaEnlazada {
+private:
+    Nodo<T>* cabeza;
+    int size;
+public:
+    ListaEnlazada() : cabeza(nullptr), size(0) {}
 
+    ~ListaEnlazada() {
+        Nodo<T>* actual = cabeza;
+        Nodo<T>* siguiente = nullptr;
+        while(actual != nullptr) {
+            siguiente = actual->getSiguiente();
+            delete actual;
+            actual = siguiente;
+        }
+    }
+
+    void insertar(const T& _valor) {
+        Nodo<T>* nuevoNodo = new Nodo<T>(_valor);
+        if(cabeza == nullptr) {
+            cabeza = nuevoNodo;
+        } else {
+            Nodo<T>* actual = cabeza;
+            while (actual->getSiguiente()) {
+                actual = actual->getSiguiente();
+            }
+            actual->setSiguiente(nuevoNodo);
+        }
+        size++;
+    }
+
+    void insertarEnPosicion(int posicion, const T& _valor) {
+        Nodo<T>* nuevoNodo = new Nodo<T>(_valor);
+
+        if (posicion == 0) {
+            nuevoNodo->setSiguiente(cabeza);
+            cabeza = nuevoNodo;
+            return;
+        }
+
+        Nodo<T>* actual = cabeza;
+        int contador = 0;
+        while (actual != nullptr && contador < (posicion - 1)) {
+            actual = actual->getSiguiente();
+            contador++;
+        }
+
+        if (actual == nullptr) {
+            std::cout << "Posición inválida" << std::endl;
+            delete nuevoNodo;
+            return;
+        }
+
+        nuevoNodo->setSiguiente(actual->getSiguiente());
+        actual->setSiguiente(nuevoNodo);
+    }
+
+    bool eliminar(const T& _valor) {
+        Nodo<T>* actual = cabeza;
+        Nodo<T>* anterior = nullptr;
+        while (actual) {
+            if (actual->getValor() == _valor) {
+                if (anterior) {
+                    anterior->setSiguiente(actual->getSiguiente());
+                } else {
+                    cabeza = actual->getSiguiente();
+                }
+                delete actual;
+                return true;
+            }
+            anterior = actual;
+            actual = actual->getSiguiente();
+        }
+        return false;
+    }
+
+    Nodo<T>* buscarPorValor(const T& _valor) const {
+        Nodo<T>* actual = cabeza;
+        while (actual != nullptr) {
+            if (actual->getValor() == _valor) {
+                return actual;
+            }
+            actual = actual->getSiguiente();
+        }
+        return nullptr;
+    }
+
+    int get_size() const { return size; }
+
+    void mostrar() const {
+        Nodo<T>* actual = cabeza;
+        cout << "Lista de valores: " << endl;
+        while (actual != nullptr) {
+            cout << actual->getValor() << endl;
+            actual = actual->getSiguiente();
+        }
+        cout << "nullptr" << endl;
+    }
+
+    Nodo<T>* get(int i) const {
+        if (i >= 0 && i < size) {
+            int j = 0;
+            Nodo<T>* actual = cabeza;
+            while (j < i) {
+                actual = actual->getSiguiente();
+                j++;
+            }
+            return actual;
+        }
+        return nullptr;
+    }
+};
 
 // Clase Distribuidora
 class Distribuidora {
 private:
-   
-//completar el código que corresponde a esta sección
-
+    ListaEnlazada<Venta> ventas;
+    int** matriz;
+    int* arreglo; // Declarar el arreglo como un miembro
+    int nc; // Número de clientes
+    int nv; // Número de vendedores
+    int np; // Número de productos
+    int ns; // Número de ventas
 
 public:
     Distribuidora(int c = 100, int v = 100, int p = 100, int s = 1000): nc(c), nv(v), np(p), ns(s) {
@@ -148,18 +275,36 @@ public:
         destruir_mat(matriz, nv);
         destruir_arreglo(arreglo);
     }
-    
-    //crear el método init_lista()
 
     void init_lista() {
-       
+        Venta* t;
+        int c, v, p;
+        for (int i = 0; i < ns; i++) {
+            c = rand() % nc;
+            v = rand() % nv;
+            p = rand() % np;
+            t=new Venta(c, v, p);
+            ventas.insertar(*t);
+        }
+        cout << "Se han generado " << ventas.get_size() << " ventas." << endl;
+        ventas.mostrar();
     }
 
     void print() {
         ventas.mostrar();
     }
-    
-     void generar_arreglo() {
+
+    void calcular_matriz() {
+        Nodo<Venta>* ptr = ventas.get(0);
+        for (int i = 0; i < ns; i++) {
+            matriz[ptr->getValor().getVendedor()][ptr->getValor().getProducto()]++;
+            ptr = ptr->getSiguiente();
+        }
+        cout << "Matriz de vendedores por producto: " << endl;
+        print_mat(matriz, nv, np);
+    }
+
+    void generar_arreglo() {
         Nodo<Venta>* ptr = ventas.get(0);
         while (ptr != nullptr) {
             arreglo[ptr->getValor().getVendedor()]++;  // Incrementar el vendedor correspondiente en el arreglo
@@ -168,16 +313,29 @@ public:
         cout << "Arreglo de vendedores: " << endl;
         print_arreglo(arreglo, nv);  // Imprimir el arreglo con los vendedores y sus ventas
     }
-    
-    
-    //crear el método calcular matriz
-    
 
-   //crear el método vendedor_con_mas_ventas_por_producto
-   
+    int vendedor_con_mas_ventas_por_producto(int producto) {
+        int max = 0;
+        int vendedorm = -1;
+        for (int i = 0; i < nv; i++) {
+            if (matriz[i][producto] > max) {
+                max = matriz[i][producto];
+                vendedorm = i;
+            }
+        }
+        return vendedorm;
+    }
     
-    //crear el método calcular_promedio_ventas
-    
+     void calcular_promedio_ventas() {
+        int cont = 0;
+        float promedio, suma = 0;
+        for (int i = 0; i < nv; i++) {
+            suma = suma + arreglo[i];
+            cont = cont + 1;
+        }
+        promedio = suma / cont;
+        cout << "El promedio de las ventas es: " << promedio << endl;
+    }
 };
 
 int main() {
